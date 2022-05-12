@@ -1,0 +1,6 @@
+/.idea/
+/.bsp/
+/target/
+/project/target/
+/project/project/
+dependency-reduced-pom.xml
