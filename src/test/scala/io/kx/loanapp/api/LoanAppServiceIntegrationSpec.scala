@@ -51,7 +51,7 @@ class LoanAppServiceIntegrationSpec
       val loanAppId = UUID.randomUUID.toString
       client.submit(create(loanAppId)).futureValue
       get(loanAppId, api.LoanAppStatus.STATUS_IN_REVIEW)
-      client.decline(api.DeclineCommand(loanAppId,"some rason"))
+      client.decline(api.DeclineCommand(loanAppId,"some reason"))
       get(loanAppId, api.LoanAppStatus.STATUS_DECLINED)
     }
 
