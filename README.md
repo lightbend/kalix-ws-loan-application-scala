@@ -144,7 +144,7 @@ Approve:
 curl -XPUT http://localhost:9000/loanapp/1/approve -H "Content-Type: application/json"
 ```
 
-## Package & Deploy
+## Package & Publish
 
 ```
 sbt docker:publish -Ddocker.username=<dockerId>
@@ -216,4 +216,117 @@ curl -XGET https://lingering-morning-1201.us-east1.kalix.app/loanapp/1 -H "Conte
 Approve:
 ```
 curl -XPUT https://lingering-morning-1201.us-east1.kalix.app/loanapp/1/approve -H "Content-Type: application/json"
+```
+# Loan application processing service
+
+## Increment version
+In `build.sbt` set `version` to `1.1-SNAPSHOT`
+
+## Define API data structure and endpoints (GRPC)
+Create `io/kx/loanproc/api` folder in `src/main/proto` folder. <br>
+Create `loan_proc_api.proto` in `src/main/proto/io/kx/loanproc/api` folder. <br>
+Create: <br>
+- state
+- commands
+- service
+
+<i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Define persistence (domain) data structure  (GRPC)
+Create `io/kx/loanproc/domain` folder in `src/main/proto` folder. <br>
+Create `loan_proc_domain.proto` in `src/main/proto/io/kx/loanproc/domain` folder. <br>
+Create: <br>
+- state
+- events
+
+<i><b>Tip</b></i>: Check content in `step-2` git branch
+## Add codegen annotations in API data structure and endpoints (GRPC)
+In `src/main/proto/io/kx/loanproc/api/loan_proc_api.proto` add AkkaServerless codegen annotations to GRPC service
+```
+service LoanProcService {
+```
+```
+option (kalix.codegen) = {
+    event_sourced_entity: {
+      name: "io.kx.loanproc.domain.LoanProcEntity"
+      entity_type: "loanproc"
+      state: "io.kx.loanproc.domain.LoanProcDomainState"
+      events: [
+        "io.kx.loanproc.domain.ProcessStarted",
+        "io.kx.loanproc.domain.Approved",
+        "io.kx.loanproc.domain.Declined"
+      ]
+    }
+  };
+```
+```
+...
+```
+<i><b>Note</b></i>: `event_sourced_entity.name` has to be a unique name
+## Compile sbt project to trigger codegen
+```
+sbt compile
+```
+
+Compile will generate these skeleton classes<br><br>
+Business logic:<br>
+`src/main/scala/io/kx/loanproc/domain/LoanProcEntity`<br>
+<br>
+Unit tests:<br>
+`src/test/scala/io/kx/loanproc/domain/LoanProcEntityTest`<br>
+Integration tests:<br>
+`src/test/scala/io/kx/loanproc/api/LoanProcEntityIntegrationTest`<br>
+
+## Update Main class
+In `src/main/scala/io/Main` you need to add new entity component (`LoanProcEntity`):
+```
+ KalixFactory.withComponents(
+      new LoanAppEntity(_),new LoanProcEntity(_))
+```
+## Implement entity skeleton class
+Implement `src/main/scala/io/kx/loanproc/domain/LoanProcEntity` class<br>
+<i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Implement unit test
+Implement `src/test/scala/io/kx/loanproc/domain/LoanProcEntitySpec` class<br>
+<i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Implement integration test
+Implement `src/test/scala/io/kx/loanproc/api/LoanProcServiceIntegrationSpec` class<br>
+<i><b>Tip</b></i>: Check content in `step-2` git branch
+
+## Run unit & integration test
+```
+sbt test
+```
+<i><b>Note</b></i>: Integration tests uses [TestContainers](https://www.testcontainers.org/) to span integration environment so it could require some time to download required containers.
+Also make sure docker is running.
+## Package & Publish
+```
+sbt docker:publish -Ddocker.username=<dockerId> 
+```
+<i><b>Note</b></i>: Replace `<dockerId>` with required dockerId
+## Deploy service
+```
+kalix service deploy loan-application my-docker-repo/loan-application:1.1-SNAPSHOT
+```
+<i><b>Note</b></i>: Replace `my-docker-repo` with your docker repository
+## Test service in production
+Start processing:
+```
+curl -XPOST -d '{
+  "client_monthly_income_cents": 60000,
+  "loan_amount_cents": 20000,
+  "loan_duration_months": 12
+}' https://lingering-morning-1201.us-east1.kalix.app/loanproc/1 -H "Content-Type: application/json"
+```
+
+Get loan processing:
+```
+curl -XGET https://lingering-morning-1201.us-east1.kalix.app/loanproc/1 -H "Content-Type: application/json"
+```
+
+Approve:
+```
+curl -XPUT https://lingering-morning-1201.us-east1.kalix.app/loanproc/1/approve -H "Content-Type: application/json"
 ```
