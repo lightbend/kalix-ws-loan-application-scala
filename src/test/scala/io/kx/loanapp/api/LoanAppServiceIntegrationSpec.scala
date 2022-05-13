@@ -43,7 +43,7 @@ class LoanAppServiceIntegrationSpec
       val loanAppId = UUID.randomUUID.toString
       client.submit(create(loanAppId)).futureValue
       get(loanAppId, api.LoanAppStatus.STATUS_IN_REVIEW)
-      client.approve(api.ApproveCommand(loanAppId))
+      client.approve(api.ApproveCommand(loanAppId)).futureValue
       get(loanAppId, api.LoanAppStatus.STATUS_APPROVED)
     }
 
@@ -51,7 +51,7 @@ class LoanAppServiceIntegrationSpec
       val loanAppId = UUID.randomUUID.toString
       client.submit(create(loanAppId)).futureValue
       get(loanAppId, api.LoanAppStatus.STATUS_IN_REVIEW)
-      client.decline(api.DeclineCommand(loanAppId,"some reason"))
+      client.decline(api.DeclineCommand(loanAppId,"some reason")).futureValue
       get(loanAppId, api.LoanAppStatus.STATUS_DECLINED)
     }
 
