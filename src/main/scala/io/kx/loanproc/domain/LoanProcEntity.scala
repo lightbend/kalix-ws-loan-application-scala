@@ -86,12 +86,9 @@ class LoanProcEntity(context: EventSourcedEntityContext) extends AbstractLoanPro
     }
 
   override def processStarted(currentState: LoanProcDomainState, processStarted: ProcessStarted): LoanProcDomainState =
-    LoanProcDomainState(
-      "",
-      LoanProcDomainStatus.STATUS_READY_FOR_REVIEW,
-      "",
-      processStarted.eventTimestamp
-    )
+    currentState
+      .withStatus(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW)
+      .withLastUpdateTimestamp(processStarted.eventTimestamp)
 
   override def approved(currentState: LoanProcDomainState, approved: Approved): LoanProcDomainState =
     currentState
