@@ -18,8 +18,8 @@ class LoanAppEntity(context: EventSourcedEntityContext) extends AbstractLoanAppE
   override def emptyState: LoanAppDomainState = LoanAppDomainState.defaultInstance;
 
   override def submit(currentState: LoanAppDomainState, submitCommand: api.SubmitCommand): EventSourcedEntity.Effect[Empty] =
-    currentState match {
-      case LoanAppDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanAppDomainStatus.STATUS_UNKNOWN =>
         val event = Submitted(
           submitCommand.loanAppId,
           submitCommand.clientId,
@@ -29,15 +29,15 @@ class LoanAppEntity(context: EventSourcedEntityContext) extends AbstractLoanAppE
           System.currentTimeMillis())
         effects.emitEvent(event)
           .thenReply(_ => Empty.defaultInstance)
-      case LoanAppDomainState(_,_,_,_,status,_,_,_) if status == LoanAppDomainStatus.STATUS_IN_REVIEW  =>
+      case LoanAppDomainStatus.STATUS_IN_REVIEW  =>
         effects.reply(Empty.defaultInstance)
       case _ =>
         effects.error(ERROR_WRONG_STATUS)
     }
 
   override def get(currentState: LoanAppDomainState, getCommand: api.GetCommand): EventSourcedEntity.Effect[api.LoanAppState] =
-    currentState match {
-      case LoanAppDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanAppDomainStatus.STATUS_UNKNOWN =>
         effects.error(ERROR_NOT_FOUND)
       case _ =>
         effects.reply(map(currentState))
@@ -55,33 +55,33 @@ class LoanAppEntity(context: EventSourcedEntityContext) extends AbstractLoanAppE
     api.LoanAppStatus.fromValue(status.value)
 
   override def approve(currentState: LoanAppDomainState, approveCommand: api.ApproveCommand): EventSourcedEntity.Effect[Empty] =
-    currentState match {
-      case LoanAppDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanAppDomainStatus.STATUS_UNKNOWN =>
         effects.error(ERROR_NOT_FOUND)
-      case LoanAppDomainState(_,_,_,_,status,_,_,_) if status == LoanAppDomainStatus.STATUS_IN_REVIEW  =>
+      case LoanAppDomainStatus.STATUS_IN_REVIEW  =>
         val event = Approved(
           approveCommand.loanAppId,
           System.currentTimeMillis())
         effects.emitEvent(event)
           .thenReply(_ => Empty.defaultInstance)
-      case LoanAppDomainState(_,_,_,_,status,_,_,_) if status == LoanAppDomainStatus.STATUS_APPROVED  =>
+      case LoanAppDomainStatus.STATUS_APPROVED  =>
         effects.reply(Empty.defaultInstance)
       case _ =>
         effects.error(ERROR_WRONG_STATUS)
     }
 
   override def decline(currentState: LoanAppDomainState, declineCommand: api.DeclineCommand): EventSourcedEntity.Effect[Empty] =
-    currentState match {
-      case LoanAppDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanAppDomainStatus.STATUS_UNKNOWN =>
         effects.error(ERROR_NOT_FOUND)
-      case LoanAppDomainState(_,_,_,_,status,_,_,_) if status == LoanAppDomainStatus.STATUS_IN_REVIEW  =>
+      case LoanAppDomainStatus.STATUS_IN_REVIEW  =>
         val event = Declined(
           declineCommand.loanAppId,
           declineCommand.reason,
           System.currentTimeMillis())
         effects.emitEvent(event)
           .thenReply(_ => Empty.defaultInstance)
-      case LoanAppDomainState(_,_,_,_,status,_,_,_) if status == LoanAppDomainStatus.STATUS_DECLINED  =>
+      case LoanAppDomainStatus.STATUS_DECLINED  =>
         effects.reply(Empty.defaultInstance)
       case _ =>
         effects.error(ERROR_WRONG_STATUS)

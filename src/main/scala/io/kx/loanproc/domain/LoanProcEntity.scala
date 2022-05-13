@@ -19,22 +19,22 @@ class LoanProcEntity(context: EventSourcedEntityContext) extends AbstractLoanPro
   override def emptyState: LoanProcDomainState = LoanProcDomainState.defaultInstance
 
   override def process(currentState: LoanProcDomainState, processCommand: api.ProcessCommand): EventSourcedEntity.Effect[Empty] =
-    currentState match {
-      case LoanProcDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanProcDomainStatus.STATUS_UNKNOWN =>
         val event = ProcessStarted(
           processCommand.loanAppId,
           System.currentTimeMillis())
         effects.emitEvent(event)
           .thenReply(_ => Empty.defaultInstance)
-      case LoanProcDomainState(_,status,_,_,_) if status == LoanProcDomainStatus.STATUS_READY_FOR_REVIEW  =>
+      case LoanProcDomainStatus.STATUS_READY_FOR_REVIEW  =>
         effects.reply(Empty.defaultInstance)
       case _ =>
         effects.error(ERROR_WRONG_STATUS)
     }
 
   override def get(currentState: LoanProcDomainState, getCommand: api.GetCommand): EventSourcedEntity.Effect[api.LoanProcState] =
-    currentState match {
-      case LoanProcDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanProcDomainStatus.STATUS_UNKNOWN =>
         effects.error(ERROR_NOT_FOUND)
       case _ =>
         effects.reply(map(currentState))
@@ -51,27 +51,27 @@ class LoanProcEntity(context: EventSourcedEntityContext) extends AbstractLoanPro
     api.LoanProcStatus.fromValue(status.value)
 
   override def approve(currentState: LoanProcDomainState, approveCommand: api.ApproveCommand): EventSourcedEntity.Effect[Empty] =
-    currentState match {
-      case LoanProcDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanProcDomainStatus.STATUS_UNKNOWN =>
         effects.error(ERROR_NOT_FOUND)
-      case LoanProcDomainState(_,status,_,_,_) if status == LoanProcDomainStatus.STATUS_READY_FOR_REVIEW  =>
+      case LoanProcDomainStatus.STATUS_READY_FOR_REVIEW  =>
         val event = Approved(
           approveCommand.loanAppId,
           approveCommand.reviewerId,
           System.currentTimeMillis())
         effects.emitEvent(event)
           .thenReply(_ => Empty.defaultInstance)
-      case LoanProcDomainState(_,status,_,_,_) if status == LoanProcDomainStatus.STATUS_APPROVED  =>
+      case LoanProcDomainStatus.STATUS_APPROVED  =>
         effects.reply(Empty.defaultInstance)
       case _ =>
         effects.error(ERROR_WRONG_STATUS)
     }
 
   override def decline(currentState: LoanProcDomainState, declineCommand: api.DeclineCommand): EventSourcedEntity.Effect[Empty] =
-    currentState match {
-      case LoanProcDomainState.defaultInstance =>
+    currentState.status match {
+      case LoanProcDomainStatus.STATUS_UNKNOWN =>
         effects.error(ERROR_NOT_FOUND)
-      case LoanProcDomainState(_,status,_,_,_) if status == LoanProcDomainStatus.STATUS_READY_FOR_REVIEW  =>
+      case LoanProcDomainStatus.STATUS_READY_FOR_REVIEW  =>
         val event = Declined(
           declineCommand.loanAppId,
           declineCommand.reviewerId,
@@ -79,19 +79,16 @@ class LoanProcEntity(context: EventSourcedEntityContext) extends AbstractLoanPro
           System.currentTimeMillis())
         effects.emitEvent(event)
           .thenReply(_ => Empty.defaultInstance)
-      case LoanProcDomainState(_,status,_,_,_) if status == LoanProcDomainStatus.STATUS_DECLINED  =>
+      case LoanProcDomainStatus.STATUS_DECLINED  =>
         effects.reply(Empty.defaultInstance)
       case _ =>
         effects.error(ERROR_WRONG_STATUS)
     }
 
   override def processStarted(currentState: LoanProcDomainState, processStarted: ProcessStarted): LoanProcDomainState =
-    LoanProcDomainState(
-      "",
-      LoanProcDomainStatus.STATUS_READY_FOR_REVIEW,
-      "",
-      processStarted.eventTimestamp
-    )
+    currentState
+      .withStatus(LoanProcDomainStatus.STATUS_READY_FOR_REVIEW)
+      .withLastUpdateTimestamp(processStarted.eventTimestamp)
 
   override def approved(currentState: LoanProcDomainState, approved: Approved): LoanProcDomainState =
     currentState

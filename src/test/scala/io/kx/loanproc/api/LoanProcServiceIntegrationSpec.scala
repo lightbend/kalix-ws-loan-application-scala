@@ -45,7 +45,8 @@ class LoanProcServiceIntegrationSpec
       val reviewerId = UUID.randomUUID.toString
       client.process(create(loanAppId)).futureValue
       get(loanAppId, api.LoanProcStatus.STATUS_READY_FOR_REVIEW)
-      client.approve(api.ApproveCommand(loanAppId,reviewerId))
+
+      client.approve(api.ApproveCommand(loanAppId,reviewerId)).futureValue
       get(loanAppId, api.LoanProcStatus.STATUS_APPROVED)
     }
 
@@ -54,7 +55,8 @@ class LoanProcServiceIntegrationSpec
       val reviewerId = UUID.randomUUID.toString
       client.process(create(loanAppId)).futureValue
       get(loanAppId, api.LoanProcStatus.STATUS_READY_FOR_REVIEW)
-      client.decline(api.DeclineCommand(loanAppId,"some reason",reviewerId))
+
+      client.decline(api.DeclineCommand(loanAppId,"some reason",reviewerId)).futureValue
       get(loanAppId, api.LoanProcStatus.STATUS_DECLINED)
     }
 
