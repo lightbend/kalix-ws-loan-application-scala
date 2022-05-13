@@ -1,6 +1,8 @@
 package io
 
+import io.kx.loanapp.action.LoanAppEventingToProcAction
 import io.kx.loanapp.domain.LoanAppEntity
+import io.kx.loanproc.action.LoanProcEventingToAppAction
 import io.kx.loanproc.domain.LoanProcEntity
 import io.kx.loanproc.view.LoanProcByStatusView
 import kalix.scalasdk.Kalix
@@ -21,7 +23,7 @@ object Main {
     // If you prefer, you may remove this and manually register these components in a
     // `Kalix()` instance.
     KalixFactory.withComponents(
-      new LoanAppEntity(_),new LoanProcEntity(_), new LoanProcByStatusView(_))
+      new LoanAppEntity(_),new LoanProcEntity(_), new LoanAppEventingToProcAction(_), new LoanProcByStatusView(_), new LoanProcEventingToAppAction(_))
   }
 
   def main(args: Array[String]): Unit = {

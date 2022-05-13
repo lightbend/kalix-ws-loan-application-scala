@@ -331,7 +331,7 @@ Approve:
 curl -XPUT https://lingering-morning-1201.us-east1.kalix.app/loanproc/1/approve -H "Content-Type: application/json"
 ```
 
-## Loan Process Views
+# Loan Process Views
 
 ## Increment version
 In `build.sbt` set `version` to `1.2-SNAPSHOT`
@@ -348,7 +348,7 @@ Create: <br>
 <i><b>Note</b></i>: Currently `enums` are not supported as query parameters ([issue 1141](https://github.com/lightbend/kalix-proxy/issues/1141)) so enum `number` value is used for query<br>
 <i><b>Tip</b></i>: Check content in `step-3` git branch
 
-## Compile maven project to trigger codegen for views
+## Compile project to trigger codegen for views
 ```
 sbt compile
 ```
@@ -401,4 +401,90 @@ kalix service deploy loan-application my-docker-repo/loan-application:1.2-SNAPSH
 Get loan processing by status:
 ```
 curl -XPOST -d {"status_id":2} https://lingering-morning-1201.us-east1.kalix.app/loanproc/views/by-status -H "Content-Type: application/json"
+```
+
+# Event driven communication
+
+## Increment version
+In `build.sbt` set `version` to `1.3-SNAPSHOT`
+
+## Action for submitted event (Loan application service -> Loan application processing service)
+Create `io/kx/loanapp/action` folder in `src/main/proto` folder. <br>
+Create `loan_app_eventing_to_proc_action.proto` in `src/main/proto/io/kx/loanapp/action` folder. <br>
+Create: <br>
+- service
+
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+
+## Action for approved & declined processing event (Loan application processing service -> Loan application service)
+Create `io/kx/loanproc/action` folder in `src/main/proto` folder. <br>
+Create `loan_proc_eventing_to_app_action.proto` in `src/main/proto/io/kx/loanproc/action` folder. <br>
+Create: <br>
+- service
+
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+
+## Compile project to trigger codegen for actions
+```
+mvn sbt
+```
+Compile will generate skeleton classes:<br><br>
+
+`src/main/scala/io/kx/loanapp/action/LoanAppEventingToProcAction`<br>
+`src/main/scala/io/kx/loanproc/action/LoanProcEventingToAppAction`<br>
+
+In `src/main/scala/io/Main` you need to add view (`LoanAppEventingToProcAction` & `LoanProcEventingToAppAction`) initialization:
+```
+ KalixFactory.withComponents(
+      new LoanAppEntity(_),new LoanProcEntity(_), new LoanAppEventingToProcAction(_), new LoanProcByStatusView(_), new LoanProcEventingToAppAction(_))
+```
+## Implement view LoanAppEventingToProcAction skeleton class
+Implement `src/main/scala/io/kx/loanapp/action/LoanAppEventingToProcAction` class<br>
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+
+## Implement view LoanProcEventingToAppAction skeleton class
+Implement `src/main/scala/io/kx/loanproc/action/LoanProcEventingToAppAction` class<br>
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+
+## System integration tests (multiple services)
+In `src/test/scala/io/kx` folder create new class `SustemIntegrationSpec`.
+<i><b>Tip</b></i>: Check content in `step-4` git branch
+
+## Run integration test
+```
+sbt test
+```
+
+<i><b>Note</b></i>: Integration tests uses [TestContainers](https://www.testcontainers.org/) to span integration environment so it could require some time to download required containers.
+Also make sure docker is running.
+
+## Package & Publish
+```
+sbt docker:publish -Ddocker.username=<dockerId> 
+```
+<i><b>Note</b></i>: Replace `<dockerId>` with required dockerId
+## Deploy service
+```
+kalix service deploy loan-application my-docker-repo/loan-application:1.3-SNAPSHOT
+```
+<i><b>Note</b></i>: Replace `my-docker-repo` with your docker repository
+## Test service in production
+Submit loan application:
+```
+curl -XPOST -d '{
+  "client_id": "123456",
+  "client_monthly_income_cents": 60000,
+  "loan_amount_cents": 20000,
+  "loan_duration_months": 12
+}' https://lingering-morning-1201.us-east1.kalix.app/loanapp/2 -H "Content-Type: application/json"
+```
+Approve loan processing:
+```
+curl -XPUT -d '{
+"reviewer_id": "9999"
+}' https://lingering-morning-1201.us-east1.kalix.app/loanproc/2/approve -H "Content-Type: application/json"
+```
+Get loan application :
+```
+curl -XGET https://lingering-morning-1201.us-east1.kalix.app/loanapp/2 -H "Content-Type: application/json"
 ```
