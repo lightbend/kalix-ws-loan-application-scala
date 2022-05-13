@@ -2,7 +2,7 @@ organization := "io.kx.loanapp"
 
 scalaVersion := "2.13.7"
 
-version := "1.1-SNAPSHOT"
+version := "1.2-SNAPSHOT"
 
 enablePlugins(KalixPlugin, JavaAppPackaging, DockerPlugin)
 dockerBaseImage := "docker.io/library/adoptopenjdk:11-jre-hotspot"

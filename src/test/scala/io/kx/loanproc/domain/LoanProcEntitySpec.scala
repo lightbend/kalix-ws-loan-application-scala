@@ -24,9 +24,10 @@ class LoanProcEntitySpec extends AnyWordSpec with Matchers {
 
     "approve loan happy path" in {
       val loanAppId = UUID.randomUUID.toString
+      val reviewerId = UUID.randomUUID.toString
       val testKit = LoanProcEntityTestKit(loanAppId,new LoanProcEntity(_))
       process(testKit,loanAppId)
-      val result: EventSourcedResult[Empty] = testKit.approve(api.ApproveCommand(loanAppId))
+      val result: EventSourcedResult[Empty] = testKit.approve(api.ApproveCommand(loanAppId,reviewerId))
       val event: Approved = result.nextEvent[Approved]
       event.loanAppId shouldBe loanAppId
       get(testKit,loanAppId,api.LoanProcStatus.STATUS_APPROVED)
@@ -34,9 +35,10 @@ class LoanProcEntitySpec extends AnyWordSpec with Matchers {
     "decline loan happy path" in {
       val loanAppId = UUID.randomUUID.toString
       val reason = "Some reason"
+      val reviewerId = UUID.randomUUID.toString
       val testKit = LoanProcEntityTestKit(loanAppId,new LoanProcEntity(_))
       process(testKit,loanAppId)
-      val result: EventSourcedResult[Empty] = testKit.decline(api.DeclineCommand(loanAppId,reason))
+      val result: EventSourcedResult[Empty] = testKit.decline(api.DeclineCommand(loanAppId,reason,reviewerId))
       val event: Declined = result.nextEvent[Declined]
       event.loanAppId shouldBe loanAppId
       event.reason shouldBe reason
