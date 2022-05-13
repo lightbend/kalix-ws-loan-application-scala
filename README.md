@@ -330,3 +330,75 @@ Approve:
 ```
 curl -XPUT https://lingering-morning-1201.us-east1.kalix.app/loanproc/1/approve -H "Content-Type: application/json"
 ```
+
+## Loan Process Views
+
+## Increment version
+In `build.sbt` set `version` to `1.2-SNAPSHOT`
+
+## Create a view
+Create `io/kx/loanproc/view` folder in `src/main/proto` folder. <br>
+Create `loan_proc_by_status_view.proto` in `src/main/proto/io/kx/loanproc/view` folder. <br>
+Create: <br>
+- state
+- request/response
+- service
+
+<i><b>Note</b></i>: `SELECT` result alias `AS results` needs to correspond with `GetLoanProcByStatusResponse` parameter name `repeated LoanProcViewState results`<br>
+<i><b>Note</b></i>: Currently `enums` are not supported as query parameters ([issue 1141](https://github.com/lightbend/kalix-proxy/issues/1141)) so enum `number` value is used for query<br>
+<i><b>Tip</b></i>: Check content in `step-3` git branch
+
+## Compile maven project to trigger codegen for views
+```
+sbt compile
+```
+Compile will generate help classes (`target/generated-*` folders) and skeleton classes<br><br>
+
+`src/main/scala/io/kx/loanproc/view/LoanProcByStatusView`<br>
+
+In `src/main/scala/io/Main` you need to add view (`LoanProcByStatusView`) initialization:
+```
+    KalixFactory.withComponents(
+      new LoanAppEntity(_),new LoanProcEntity(_), new LoanProcByStatusView(_))
+```
+
+## Implement view LoanProcByStatusView skeleton class
+Implement `src/main/scala/io/kx/loanproc/view/LoanProcByStatusView` class<br>
+<i><b>Tip</b></i>: Check content in `step-3` git branch
+
+##Unit test
+
+Because of the nature of views only Integration tests are done.
+
+## Create integration tests for view
+1. Copy `io/kx/loanproc/api/LoanProcServiceIntegrationSpec` class to `io/kx/loanproc/api/LoanProcServiceViewIntegrationSpec`
+2. Remove all tests in 
+3. Add next to `clien declaration`:
+```
+private val view = testKit.getGrpcClient(classOf[LoanProcByStatus])
+```
+5. Add `view test`
+
+<i><b>Tip</b></i>: Check content in `step-3` git branch
+
+## Run integration test
+```
+sbt test
+```
+<i><b>Note</b></i>: Integration tests uses [TestContainers](https://www.testcontainers.org/) to span integration environment so it could require some time to download required containers.
+Also make sure docker is running.
+## Package & Publish
+```
+sbt docker:publish -Ddocker.username=<dockerId> 
+```
+<i><b>Note</b></i>: Replace `<dockerId>` with required dockerId
+## Deploy service
+```
+kalix service deploy loan-application my-docker-repo/loan-application:1.2-SNAPSHOT
+```
+<i><b>Note</b></i>: Replace `my-docker-repo` with your docker repository
+## Test service in production
+Get loan processing by status:
+```
+curl -XPOST -d {"status_id":2} https://lingering-morning-1201.us-east1.kalix.app/loanproc/views/by-status -H "Content-Type: application/json"
+```
