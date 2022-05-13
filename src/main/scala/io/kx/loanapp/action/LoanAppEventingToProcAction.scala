@@ -28,13 +28,13 @@ class LoanAppEventingToProcAction(creationContext: ActionCreationContext) extend
         submitted.loanDurationMonths
       )).execute()
         .map { _ =>
-          effects.reply(Empty.defaultInstance)
+          Empty.defaultInstance
         }
         .recover{ ex =>
           log.error("onSubmitted error [{}]: {}",submitted.loanAppId,ex)
-          effects.reply(Empty.defaultInstance)
+          Empty.defaultInstance
         }
-    effects.asyncEffect(futureEffect)
+    effects.asyncReply(futureEffect)
   }
 
   override def ignoreOtherEvents(any: ScalaPbAny): Action.Effect[Empty] = effects.reply(Empty.defaultInstance)

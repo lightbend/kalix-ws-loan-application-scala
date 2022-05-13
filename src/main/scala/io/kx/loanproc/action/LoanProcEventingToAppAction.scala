@@ -23,13 +23,13 @@ class LoanProcEventingToAppAction(creationContext: ActionCreationContext) extend
       components.loanAppEntity.approve(loanappapi.ApproveCommand(approved.loanAppId))
         .execute()
         .map{ _ =>
-          effects.reply(Empty.defaultInstance)
+          Empty.defaultInstance
         }
         .recover{ ex =>
           log.error("onApproved error [{}]: {}",approved.loanAppId,ex)
-          effects.reply(Empty.defaultInstance)
+          Empty.defaultInstance
         }
-    effects.asyncEffect(futureEffect)
+    effects.asyncReply(futureEffect)
   }
   override def onDeclined(declined: Declined): Action.Effect[Empty] = {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,13 +37,13 @@ class LoanProcEventingToAppAction(creationContext: ActionCreationContext) extend
       components.loanAppEntity.decline(loanappapi.DeclineCommand(declined.loanAppId,declined.reason))
         .execute()
         .map{ _ =>
-          effects.reply(Empty.defaultInstance)
+          Empty.defaultInstance
         }
         .recover{ ex =>
           log.error("onDeclined error [{}]: {}",declined.loanAppId,ex)
-          effects.reply(Empty.defaultInstance)
+          Empty.defaultInstance
         }
-    effects.asyncEffect(futureEffect)
+    effects.asyncReply(futureEffect)
   }
   override def ignoreOtherEvents(any: ScalaPbAny): Action.Effect[Empty] = effects.reply(Empty.defaultInstance)
 }
