@@ -38,7 +38,7 @@ class LoanProcServiceViewIntegrationSpec
       val reviewerId = UUID.randomUUID.toString
       client.process(create(loanAppId)).futureValue
       get(loanAppId, api.LoanProcStatus.STATUS_READY_FOR_REVIEW)
-      client.approve(api.ApproveCommand(loanAppId,reviewerId))
+      client.approve(api.ApproveCommand(loanAppId,reviewerId)).futureValue
       get(loanAppId, api.LoanProcStatus.STATUS_APPROVED)
 
       val loanAppId2 = UUID.randomUUID.toString
